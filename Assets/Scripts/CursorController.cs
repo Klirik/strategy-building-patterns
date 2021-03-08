@@ -1,12 +1,21 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class CursorController : MonoBehaviour
 {
-    public GameObject prefab;
+    private const float MAX_DIST_RAYCAST = 100f;
 
-    GameObject selectedObject;
+    public event Action<bool> OnClickSurface = delegate { };
     Vector3 currentCursorPoint;
     Ray ray;
+
+    [SerializeField] int surfaceLayerNumber = 9;
+    int layerMask;
+
+    private void Awake()
+    {
+        layerMask = 1 << surfaceLayerNumber;        
+    }
 
     void Update()
     {
@@ -14,23 +23,15 @@ public class CursorController : MonoBehaviour
         {
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            var canSelectObject = Physics.Raycast(ray) && selectedObject == null;
 
-            selectedObject = canSelectObject ? Instantiate(prefab) : null;
+            if (Physics.Raycast(ray, MAX_DIST_RAYCAST, layerMask))
+            {
+                OnClickSurface?.Invoke(true);
+            }
         }
-
-        SetObjPosToCursorPos(selectedObject);
     }
-
-    void SetObjPosToCursorPos(GameObject gameObject)
-    {
-        if (gameObject == null) return;
-
-        currentCursorPoint = CalculateCurrentCursorPos();
-        gameObject.transform.position = currentCursorPoint;
-    }
-
-    Vector3 CalculateCurrentCursorPos()
+        
+    public Vector3 CalculateCurrentCursorPos()
     {
         currentCursorPoint = Input.mousePosition;
         currentCursorPoint.z = -Camera.main.transform.position.z;
